@@ -1,0 +1,139 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Audio;
+
+public class Player : MonoBehaviour
+{
+    public AudioClip[] audios;
+    public AudioSource audioSource;
+    public int MinBeforePause;
+    public int MaxBeforePause;
+    public GameObject ContinueButton;
+    public GameObject PausePanel;
+    public GameObject Background; 
+
+    private int RandomSong;
+    private int RandomLength;
+    private bool IsPlayingSong = false;
+    private float SongLength;
+    private int currentSong;
+    private bool Waiting;
+    private bool InCoroutine; 
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (!IsPlayingSong)
+        {
+            int RandomSong = Random.Range(1, audios.Length);
+            currentSong = RandomSong;
+            IsPlayingSong = true;
+            audioSource.clip = audios[RandomSong];
+            audioSource.Play();
+            SongLength = audios[RandomSong].length;
+        }
+
+        if (IsPlayingSong && !Waiting)
+        {
+            SongLength -= Time.deltaTime;
+            if (SongLength <= 0)
+            {
+                IsPlayingSong = false;
+                
+            }
+
+            if (!InCoroutine)
+            {
+                StartCoroutine("StopRandomly");
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.I) && !Waiting)
+        {
+            PickNewSong();
+            InCoroutine = false;
+            
+        }
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            Continue();
+        }
+        if (Input.GetKeyDown(KeyCode.I) && Waiting)
+        {
+            Continue();
+            PickNewSong();
+            InCoroutine = false;
+            Waiting = false;
+        }
+
+
+    }
+
+    public void PickNewSong()
+    {
+        if (!Waiting)
+        {
+            audioSource.Stop();
+            IsPlayingSong = false;
+            InCoroutine = false;
+        }
+        if (Waiting)
+        {
+            Continue();
+            audioSource.Stop();
+            IsPlayingSong = false;
+            InCoroutine = false;
+        }
+    }
+
+    private IEnumerator StopRandomly()
+    {
+        InCoroutine = true;
+        int WaitTime = Random.Range(MinBeforePause, MaxBeforePause);
+        Debug.Log(WaitTime);
+        yield return new WaitForSeconds(WaitTime);
+        Waiting = true; 
+        audioSource.Pause();
+        InCoroutine = false; 
+    }
+
+    public void Toggle()
+    {
+        PausePanel.SetActive(!PausePanel.activeSelf); 
+
+        if (PausePanel.activeSelf)
+        {
+            Time.timeScale = 0; 
+            ContinueButton.SetActive(false);
+            audioSource.Pause();
+            Background.SetActive(true);
+        }
+        else
+        {
+            Background.SetActive(false);
+            Time.timeScale = 1;
+            ContinueButton.SetActive(true);
+            if (!Waiting)
+            {
+                audioSource.Play();
+            }
+        }
+    }
+
+    public void Continue()
+    {
+        if (Waiting)
+        {
+            audioSource.Play();
+            Waiting = false;
+        }
+        
+    }
+}
